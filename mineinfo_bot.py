@@ -104,8 +104,12 @@ async def cmd_info(message: Message):
     if "error" in status:
         # Редактируем сообщение с ошибкой
         await loading_msg.edit_text(f"❌ {status['error']}")
-        # Удаляем через 15 секунд
-        await asyncio.sleep(15)
+        # Обратный отсчет для ошибки
+        for i in range(15, 0, -1):
+            await loading_msg.edit_text(
+                f"❌ {status['error']}\n\n⏳ Сообщение будет удалено через {i} сек..."
+            )
+            await asyncio.sleep(1)
         await loading_msg.delete()
         return
 
@@ -119,11 +123,17 @@ async def cmd_info(message: Message):
         f"**📋 Список игроков онлайн:**\n{status['players_list']}"
     )
 
-    # 🔥 РЕДАКТИРУЕМ существующее сообщение вместо создания нового
+    # Редактируем сообщение с информацией
     await loading_msg.edit_text(response, parse_mode="Markdown")
 
-    # Ждем 15 секунд и удаляем сообщение
-    await asyncio.sleep(15)
+    # 🔥 ОБРАТНЫЙ ОТСЧЕТ до удаления
+    for i in range(15, 0, -1):
+        # Добавляем таймер в конец сообщения
+        timer_text = f"\n\n⏳ Сообщение будет удалено через {i} сек..."
+        await loading_msg.edit_text(response + timer_text, parse_mode="Markdown")
+        await asyncio.sleep(1)
+
+    # Удаляем сообщение
     await loading_msg.delete()
 
 
