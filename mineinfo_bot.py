@@ -93,7 +93,52 @@ def get_minecraft_status(ip, port=25565):
         sock.close()
 
 
-@dp.message(Command("info"))
+@dp.message(Command("smp", "purmur", "purpur", "vanilla"))
+async def cmd_info1(message: Message):
+    """Обработчик команды /info - показывает полную информацию со списком игроков"""
+    # Отправляем первое сообщение "Загрузка..."
+    loading_msg = await message.reply("🔄 Получение информации о сервере...")
+
+    status = get_minecraft_status("purmur.exaroton.me", 58386)
+
+    if "error" in status:
+        # Редактируем сообщение с ошибкой
+        # await loading_msg.edit_text(f"❌ {status['error']}")
+        await loading_msg.edit_text(f"❌ Сервер выключен")
+        # Обратный отсчет для ошибки
+        for i in range(15, 0, -1):
+            await loading_msg.edit_text(
+                f"❌ {status['error']}\n\n⏳ Сообщение будет удалено через {i} сек..."
+            )
+            await asyncio.sleep(1)
+        await loading_msg.delete()
+        return
+
+    # Полная информация со списком игроков
+    response = (
+        f"🎮 **Полная информация о сервере PurMur Vanilla**\n"
+        f"📌 **IP:** `purmur.exaroton.me:58386`\n"
+        f"📡 **Версия:** {status['version']}\n"
+        f"👥 **Игроки:** {status['online']}/{status['max']}\n"
+        f"📝 **MOTD:** {status['motd']}\n\n"
+        f"**📋 Список игроков онлайн:**\n{status['players_list']}"
+    )
+
+    # Редактируем сообщение с информацией
+    await loading_msg.edit_text(response, parse_mode="Markdown")
+
+    # 🔥 ОБРАТНЫЙ ОТСЧЕТ до удаления
+    for i in range(15, 0, -1):
+        # Добавляем таймер в конец сообщения
+        timer_text = f"\n\n⏳ Сообщение будет удалено через {i} сек..."
+        await loading_msg.edit_text(response + timer_text, parse_mode="Markdown")
+        await asyncio.sleep(1)
+
+    # Удаляем сообщение
+    await loading_msg.delete()
+
+
+@dp.message(Command("create", "info"))
 async def cmd_info(message: Message):
     """Обработчик команды /info - показывает полную информацию со списком игроков"""
     # Отправляем первое сообщение "Загрузка..."
