@@ -1,6 +1,6 @@
 import json
 import socket
-from aiogram import Bot, Dispatcher
+from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from aiogram.types import Message
 import asyncio
@@ -82,6 +82,7 @@ def get_minecraft_status(ip, port=25565):
             "version": version,
             "motd": description,
             "players_list": players_online,
+            "players_sample": player_list,  # Сохраняем список для /info
         }
 
     except socket.timeout:
@@ -94,41 +95,34 @@ def get_minecraft_status(ip, port=25565):
 
 @dp.message(Command("info"))
 async def cmd_info(message: Message):
-    """Обработчик команды /info"""
+    """Обработчик команды /info - показывает полную информацию со списком игроков"""
     await message.answer("🔄 Получение информации о сервере...")
 
     status = get_minecraft_status(SERVER_IP, SERVER_PORT)
 
     if "error" in status:
-        await message.answer(f"❌ {status['error']}")
+        await message.reply(f"❌ {status['error']}")
         return
 
-    # Формируем красивый ответ
+    # Полная информация со списком игроков
     response = (
-        f"🎮 **Информация о Minecraft сервере**\n"
+        f"🎮 **Полная информация о сервере PurMur Create**\n"
         f"📌 **IP:** `{SERVER_IP}:{SERVER_PORT}`\n"
         f"📡 **Версия:** {status['version']}\n"
         f"👥 **Игроки:** {status['online']}/{status['max']}\n"
         f"📝 **MOTD:** {status['motd']}\n\n"
-        f"**Список игроков:**\n{status['players_list']}"
+        f"**📋 Список игроков онлайн:**\n{status['players_list']}"
     )
 
-    await message.answer(response, parse_mode="Markdown")
-
-
-@dp.message(Command("start"))
-async def cmd_start(message: Message):
-    """Приветственное сообщение"""
-    await message.answer(
-        "👋 Привет! Я бот для проверки статуса Minecraft сервера.\n\n"
-        "Используй команду /info чтобы узнать текущий статус сервера.",
-        parse_mode="Markdown",
-    )
+    await message.reply(response, parse_mode="Markdown")
 
 
 async def main():
     """Запуск бота"""
     print("🤖 Бот запущен!")
+    print(f"📡 Сервер: {SERVER_IP}:{SERVER_PORT}")
+    print("✅ Бот отвечает на сообщения краткой информацией")
+    print("✅ /info показывает полную информацию со списком игроков")
     await dp.start_polling(bot)
 
 
