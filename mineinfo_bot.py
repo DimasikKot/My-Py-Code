@@ -96,12 +96,17 @@ def get_minecraft_status(ip, port=25565):
 @dp.message(Command("info"))
 async def cmd_info(message: Message):
     """Обработчик команды /info - показывает полную информацию со списком игроков"""
-    await message.answer("🔄 Получение информации о сервере...")
+    # Отправляем первое сообщение "Загрузка..."
+    loading_msg = await message.reply("🔄 Получение информации о сервере...")
 
     status = get_minecraft_status(SERVER_IP, SERVER_PORT)
 
     if "error" in status:
-        await message.reply(f"❌ {status['error']}")
+        # Редактируем сообщение с ошибкой
+        await loading_msg.edit_text(f"❌ {status['error']}")
+        # Удаляем через 15 секунд
+        await asyncio.sleep(15)
+        await loading_msg.delete()
         return
 
     # Полная информация со списком игроков
@@ -114,7 +119,12 @@ async def cmd_info(message: Message):
         f"**📋 Список игроков онлайн:**\n{status['players_list']}"
     )
 
-    await message.reply(response, parse_mode="Markdown")
+    # 🔥 РЕДАКТИРУЕМ существующее сообщение вместо создания нового
+    await loading_msg.edit_text(response, parse_mode="Markdown")
+
+    # Ждем 15 секунд и удаляем сообщение
+    await asyncio.sleep(15)
+    await loading_msg.delete()
 
 
 async def main():
