@@ -103,8 +103,7 @@ async def cmd_info1(message: Message):
 
     if "error" in status:
         # Редактируем сообщение с ошибкой
-        # await loading_msg.edit_text(f"❌ {status['error']}")
-        await loading_msg.edit_text(f"❌ Сервер выключен")
+        await loading_msg.edit_text(f"❌ {status['error']}")
         # Обратный отсчет для ошибки
         for i in range(15, 0, -1):
             await loading_msg.edit_text(
