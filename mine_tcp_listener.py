@@ -82,7 +82,61 @@ def get_minecraft_status_tcp(ip, port=25565):
         sock.close()
 
 
-get_minecraft_status_tcp("play.hypixel.net", 25565)
+def get_minecraft_udp_players(ip, port=25565):
+    # Создаем UDP сокет
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.settimeout(3.0)
+
+    try:
+        # 1. Хэндшейк (Handshake)
+        # Магические байты для Query: 0xFE 0xFD + тип пакета 0x09 + ID сессии (4 байта)
+        session_id = b"\x01\x02\x03\x04"
+        handshake_packet = b"\xfe\xfd\x09" + session_id
+        sock.sendto(handshake_packet, (ip, port))
+
+        data, _ = sock.recvfrom(1024)
+        # Получаем токен вызова (challenge token) из ответа
+        challenge_token = int(data[5:-1].decode("utf-8"))
+        challenge_bytes = struct.pack(">i", challenge_token)
+
+        # 2. Запрос статуса (Full Stat Request)
+        # Тип пакета 0x00 + ID сессии + Токен + 4 пустых байта для полной статистики
+        stat_packet = (
+            b"\xfe\xfd\x00" + session_id + challenge_bytes + b"\x00\x00\x00\x00"
+        )
+        sock.sendto(stat_packet, (ip, port))
+
+        data, _ = sock.recvfrom(2048)
+
+        # Декодируем и парсим полученный текст
+        # Данные идут в виде пар: Ключ \x00 Значение \x00
+        content = data[11:]  # Пропускаем заголовок пакета
+        items = content.split(b"\x00")
+
+        info = {}
+        for i in range(0, len(items) - 1, 2):
+            key = items[i].decode("utf-8", errors="ignore")
+            if not key:  # Если дошли до списка игроков, цикл прерывается
+                break
+            val = items[i + 1].decode("utf-8", errors="ignore")
+            info[key] = val
+
+        print(
+            f"Игроков онлайн: {info.get('numplayers', 'N/A')}/{info.get('maxplayers', 'N/A')}"
+        )
+        print(f"Карта: {info.get('map', 'N/A')}")
+        print(f"Версия: {info.get('version', 'N/A')}")
+        print(f"Всё: {info}")
+
+    except socket.timeout:
+        print("Время ожидания ответа от сервера истекло (проверьте UDP порт).")
+    except Exception as e:
+        print(f"Ошибка: {e}")
+    finally:
+        sock.close()
+
+
+# get_minecraft_status_tcp("play.hypixel.net", 25565)
 
 # Запуск (замените на свой IP и Query порт)
 get_minecraft_status_tcp("185.9.145.210", 32290)
