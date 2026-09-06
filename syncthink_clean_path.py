@@ -9,6 +9,8 @@ errors = []
 count_created = 0
 conflicts = []
 
+SYNC_DIR = Path("C:/Syncthink/")
+
 TEMP_DIR = Path("K:/Desktop/Temp/")
 WORK_DIR = Path("C:/Users/DKot/Documents/WORK/")
 OBSIDIAN_DIR = Path("K:/Obsidian/")
@@ -16,7 +18,7 @@ VUC_DIR = Path("K:/ВУЦ/")
 MULTIMC_DIR = Path("K:/MultiMC")
 SHAREX_DIR = Path("C:/Users/DKot/Documents/ShareX")
 
-for path in MULTIMC_DIR.rglob("*"):
+for path in SYNC_DIR.rglob("*"):
     if path.is_file() and PATTERN.search(path.name):
         new_name = PATTERN.sub("", path.name)
         new_path = path.with_name(new_name)

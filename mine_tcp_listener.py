@@ -3,7 +3,7 @@ import struct
 import json
 
 
-def get_minecraft_status_tcp(ip, port=25565):
+def get_minecraft_status_tcp(ip: str, port: int=25565) -> None:
     # Создаем TCP сокет вместо UDP
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.settimeout(5.0)
@@ -82,7 +82,7 @@ def get_minecraft_status_tcp(ip, port=25565):
         sock.close()
 
 
-def get_minecraft_udp_players(ip, port=25565):
+def get_minecraft_udp_players(ip: str, port: int=25565):
     # Создаем UDP сокет
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.settimeout(3.0)
