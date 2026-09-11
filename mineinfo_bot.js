@@ -19,14 +19,11 @@ async function editMessage(chatId, messageId, text, token, parseMode = null) {
   const body = { chat_id: chatId, message_id: messageId, text };
   if (parseMode) body.parse_mode = parseMode;
 
-  const res = await fetch(
-    `https://api.telegram.org/bot${token}/editMessageText`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    },
-  );
+  const res = await fetch(`https://api.telegram.org/bot${token}/editMessageText`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
   return await res.json();
 }
 
@@ -46,6 +43,18 @@ async function sendChatAction(chatId, action, token) {
   });
 }
 
+async function sendAnimation(chatId, url, token, caption = null) {
+  const body = { chat_id: chatId, animation: url };
+  if (caption) body.caption = caption;
+
+  const res = await fetch(`https://api.telegram.org/bot${token}/sendAnimation`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  return await res.json();
+}
+
 // ============================================================
 // Minecraft Protocol — VarInt утилиты
 // ============================================================
@@ -55,11 +64,11 @@ function writeVarInt(value) {
   const bytes = [];
   let v = value >>> 0; // приводим к unsigned 32-bit
   while (true) {
-    if ((v & ~0x7f) === 0) {
+    if ((v & ~0x7F) === 0) {
       bytes.push(v);
       break;
     }
-    bytes.push((v & 0x7f) | 0x80);
+    bytes.push((v & 0x7F) | 0x80);
     v >>>= 7;
   }
   return new Uint8Array(bytes);
@@ -72,7 +81,7 @@ function readVarIntFromBuffer(buf, offset = 0) {
   while (true) {
     if (offset >= buf.length) throw new Error("VarInt: буфер закончился");
     const byte = buf[offset++];
-    value |= (byte & 0x7f) << position;
+    value |= (byte & 0x7F) << position;
     if ((byte & 0x80) === 0) break;
     position += 7;
     if (position >= 32) throw new Error("VarInt слишком большой");
@@ -101,12 +110,12 @@ function buildHandshakePacket(host, port) {
   const hostBytes = new TextEncoder().encode(host);
 
   const payload = concatBytes(
-    writeVarInt(0x00), // Packet ID
-    writeVarInt(-1), // Protocol Version (-1 = "просто статус")
-    writeVarInt(hostBytes.length), // длина адреса
-    hostBytes, // адрес
-    new Uint8Array([(port >> 8) & 0xff, port & 0xff]), // порт (big-endian)
-    writeVarInt(1), // Next State = 1 (status)
+    writeVarInt(0x00),                          // Packet ID
+    writeVarInt(-1),                            // Protocol Version (-1 = "просто статус")
+    writeVarInt(hostBytes.length),              // длина адреса
+    hostBytes,                                  // адрес
+    new Uint8Array([(port >> 8) & 0xFF, port & 0xFF]), // порт (big-endian)
+    writeVarInt(1)                              // Next State = 1 (status)
   );
 
   // Спереди — длина всего пакета
@@ -196,7 +205,7 @@ async function handlePurMurVanilla(chatId, token) {
   const loading = await sendMessage(
     chatId,
     "🔄 Получение информации о сервере...",
-    token,
+    token
   );
   const messageId = loading.result?.message_id;
   if (!messageId) return;
@@ -204,15 +213,13 @@ async function handlePurMurVanilla(chatId, token) {
   const status = await getMinecraftStatus("purmur.exaroton.me", 58386);
 
   if (status.error) {
-    for (let i = 15; i > 0; i--) {
-      await editMessage(
-        chatId,
-        messageId,
-        `❌ ${status.error}\n\n⏳ Сообщение будет удалено через ${i} сек...`,
-        token,
-      );
-      await sleep(1000);
-    }
+    await editMessage(
+      chatId,
+      messageId,
+      `❌ ${status.error}\n\n⏳ Сообщение будет удалено через 15 сек...`,
+      token
+    );
+    await sleep(15000);
     await deleteMessage(chatId, messageId, token);
     return;
   }
@@ -225,16 +232,14 @@ async function handlePurMurVanilla(chatId, token) {
     `📝 **MOTD:** ${status.motd}\n\n` +
     `**📋 Список игроков онлайн:**\n${status.players_list}`;
 
-  for (let i = 15; i > 0; i--) {
-    await editMessage(
-      chatId,
-      messageId,
-      response + `\n\n⏳ Сообщение будет удалено через ${i} сек...`,
-      token,
-      "Markdown",
-    );
-    await sleep(1000);
-  }
+  await editMessage(
+    chatId,
+    messageId,
+    response + `\n\n⏳ Сообщение будет удалено через 15 сек...`,
+    token,
+    "Markdown"
+  );
+  await sleep(15000);
   await deleteMessage(chatId, messageId, token);
 }
 
@@ -245,7 +250,7 @@ async function handlePurMurCreate(chatId, token) {
   const loading = await sendMessage(
     chatId,
     "🔄 Получение информации о сервере...",
-    token,
+    token
   );
   const messageId = loading.result?.message_id;
   if (!messageId) return;
@@ -253,37 +258,33 @@ async function handlePurMurCreate(chatId, token) {
   const status = await getMinecraftStatus("185.9.145.210", 32290);
 
   if (status.error) {
-    for (let i = 15; i > 0; i--) {
-      await editMessage(
-        chatId,
-        messageId,
-        `❌ ${status.error}\n\n⏳ Сообщение будет удалено через ${i} сек...`,
-        token,
-      );
-      await sleep(1000);
-    }
+    await editMessage(
+      chatId,
+      messageId,
+      `❌ ${status.error}\n\n⏳ Сообщение будет удалено через 15 сек...`,
+      token
+    );
+    await sleep(15000);
     await deleteMessage(chatId, messageId, token);
     return;
   }
 
   const response =
     `🎮 **Полная информация о сервере PurMur Create**\n` +
-    `📌 **IP:** \`${"185.9.145.210"}:${32290}\`\n` +
+    `📌 **IP:** \`185.9.145.210:32290\`\n` +
     `📡 **Версия:** ${status.version}\n` +
     `👥 **Игроки:** ${status.online}/${status.max}\n` +
     `📝 **MOTD:** ${status.motd}\n\n` +
     `**📋 Список игроков онлайн:**\n${status.players_list}`;
 
-  for (let i = 15; i > 0; i--) {
-    await editMessage(
-      chatId,
-      messageId,
-      response + `\n\n⏳ Сообщение будет удалено через ${i} сек...`,
-      token,
-      "Markdown",
-    );
-    await sleep(1000);
-  }
+  await editMessage(
+    chatId,
+    messageId,
+    response + `\n\n⏳ Сообщение будет удалено через 15 сек...`,
+    token,
+    "Markdown"
+  );
+  await sleep(15000);
   await deleteMessage(chatId, messageId, token);
 }
 
@@ -320,17 +321,98 @@ async function handleUpdate(update, env) {
       `🎮 **Доступные команды:**\n` +
       `/vanilla /purmur — PurMur Vanilla\n` +
       `/create /info — PurMur Create\n` +
-      `ℹ️ Сообщения с информацией автоматически удаляются через 15 секунд.`;
+      `ℹ️ Сообщения с информацией автоматически удаляются через 15 секунд.` + `\n\n⏳ Сообщение будет удалено через 15 сек...`;
     await sendMessage(chatId, reply, BOT_TOKEN, "Markdown");
     return;
   }
 
-  if (text.startsWith("/")) {
-    await sendMessage(
+  if (text.startsWith("/sex")) {
+    const loading = await sendMessage(
       chatId,
-      `❓ Неизвестная команда: ${text}\n\nИспользуйте /start для списка команд.`,
-      BOT_TOKEN,
+      `❌ /sex: 403 Forbidden.\nВаша ориентация не подтвердила доступ к сексу.\nПопробуйте /hug, /kiss или /start.`,
+      BOT_TOKEN
     );
+    const messageId = loading.result?.message_id;
+    if (!messageId) return;
+    await sleep(15000);
+    await deleteMessage(chatId, messageId, BOT_TOKEN);
+    return;
+  }
+
+  const HUG_TEXTS = [
+    "🤗 Обнимаю крепко-крепко!",
+    "🫂 Иди сюда, я тебя обниму!",
+    "Запускаю протокол объятий... Обнимаю!",
+    "Ты получил(а) объятие! Не благодари.",
+    "Обнимашки активированы. Сопротивление бесполезно."
+  ];
+
+  const KISS_TEXTS = [
+    "😘 Чмок!",
+    "💋 Лови поцелуй!",
+    "Инициализирую поцелуй... 3... 2... 1... Чмок!",
+    "Поцелуй доставлен. Получатель: ты.",
+    "Этот поцелуй виртуальный, но приятный."
+  ];
+
+  function pick(arr) {
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
+
+  if (text.startsWith("/hug")) {
+    const loading = await sendMessage(chatId, pick(HUG_TEXTS), BOT_TOKEN);
+    const messageId = loading.result?.message_id;
+
+    try {
+      const res = await fetch("https://api.waifu.pics/sfw/hug");
+      const data = await res.json();
+      if (data.url) {
+        // если есть sendAnimation — используй его для GIF
+        await sendAnimation(chatId, data.url, BOT_TOKEN);
+      }
+    } catch (e) {
+      console.error("hug api error:", e);
+    }
+
+    if (messageId) {
+      await sleep(15000);
+      await deleteMessage(chatId, messageId, BOT_TOKEN);
+    }
+    return;
+  }
+
+  if (text.startsWith("/kiss")) {
+    const loading = await sendMessage(chatId, pick(KISS_TEXTS), BOT_TOKEN);
+    const messageId = loading.result?.message_id;
+
+    try {
+      const res = await fetch("https://api.waifu.pics/sfw/kiss");
+      const data = await res.json();
+      if (data.url) {
+        await sendAnimation(chatId, data.url, BOT_TOKEN);
+      }
+    } catch (e) {
+      console.error("kiss api error:", e);
+    }
+
+    if (messageId) {
+      await sleep(15000);
+      await deleteMessage(chatId, messageId, BOT_TOKEN);
+    }
+    return;
+  }
+
+  if (text.startsWith("/")) {
+    const loading = await sendMessage(
+      chatId,
+      `❓ Неизвестная команда: ${text}\n\nИспользуйте /start для списка команд.` + `\n\n⏳ Сообщение будет удалено через 15 сек...`,
+      BOT_TOKEN
+    );
+    const messageId = loading.result?.message_id;
+    if (!messageId) return;
+    await sleep(15000);
+    await deleteMessage(chatId, messageId, BOT_TOKEN);
+    return;
   }
 }
 
