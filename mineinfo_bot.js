@@ -410,14 +410,16 @@ async function handleUpdate(update, env) {
       const pretty = JSON.stringify(loading, null, 2); // отступ в 2 пробела
       let notified = ""
       try {
-        notified = await env.PURMUR_STATE.get("purmur_create");
+        checkPlayersAndNotify(env);
       } catch (e) {
         notified = String(e);
       }
-      await sendMessage(
+      await editMessage(
         chatId,
+        messageId,
         "```json\n" + pretty + "\n```" + "\n\n" + notified,
-        BOT_TOKEN
+        BOT_TOKEN,
+        "MarkdownV2",
       );
       await sleep(15000);
       await deleteMessage(chatId, messageId, BOT_TOKEN);
