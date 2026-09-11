@@ -402,6 +402,26 @@ async function handleUpdate(update, env) {
     return;
   }
 
+  if (text.startsWith("/debug")) {
+    const loading = await sendMessage(chatId, pick(KISS_TEXTS), BOT_TOKEN);
+    const messageId = loading.result?.message_id;
+
+    if (messageId) {
+      const pretty = JSON.stringify(loading, null, 2); // отступ в 2 пробела
+      const notified = await env.STATE.get("purmur_notified");
+      await editMessage(
+        chatId,
+        messageId,
+        "```json\n" + pretty + "\n```" + "\n\n" + notified,
+        BOT_TOKEN,
+        "MarkdownV2"
+      );
+      await sleep(15000);
+      await deleteMessage(chatId, messageId, BOT_TOKEN);
+    }
+    return;
+  }
+
   if (text.startsWith("/")) {
     const loading = await sendMessage(
       chatId,
@@ -413,6 +433,38 @@ async function handleUpdate(update, env) {
     await sleep(15000);
     await deleteMessage(chatId, messageId, BOT_TOKEN);
     return;
+  }
+}
+
+async function checkPlayersAndNotify(env) {
+  const status = await getMinecraftStatus("185.9.145.210", 32290);
+
+  if (status.error) {
+    console.error("Cron: ошибка получения статуса:", status.error);
+    return;
+  }
+
+  const online = status.online || 0;
+
+  // Ключ в KV для защиты от повторных уведомлений
+  const notified = await env.STATE.get("purmur_notified");
+
+  // Есть игроки и мы ещё не уведомляли — шлём сообщение
+  if (online > 0 && !notified) {
+    const text =
+      `🎮 **На сервере PurMur Create кто-то играет!**\n` +
+      `👥 Онлайн: ${online}/${status.max}\n` +
+      `📋 Игроки:\n${status.players_list}`;
+
+    await sendMessage(-1003353431012, text, env.BOT_TOKEN, "Markdown");
+
+    // Запоминаем, что уведомили. TTL — 3 часа, чтобы флаг не залип навсегда
+    await env.STATE.put("purmur_notified", "1", { expirationTtl: 10800 });
+  }
+
+  // Игроков нет — сбрасываем флаг, чтобы в следующий раз снова уведомить
+  if (online === 0) {
+    await env.STATE.delete("purmur_notified");
   }
 }
 
@@ -438,5 +490,10 @@ export default {
     }
 
     return new Response("Not found", { status: 404 });
+  },
+
+  async scheduled(event, env, ctx) {
+    // Cloudflare вызывает это каждые 10 минут согласно wrangler.toml
+    ctx.waitUntil(checkPlayersAndNotify(env));
   },
 };
