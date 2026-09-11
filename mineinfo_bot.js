@@ -457,8 +457,9 @@ async function checkPlayersPurMurCreateAndNotify(env) {
   const online = status.online || 0;
 
   // Сколько игроков было в прошлый раз (null -> 0)
-  const prevRaw = await env.PURMUR_STATE.get("purmur_create");
+  const prevRaw = await env.PURMUR_STATE.get("purmur_create"); 
   const prev = prevRaw === null ? 0 : Number(prevRaw);
+  console.log("purmur_create prev: " + prev);
 
   // Ничего не изменилось — выходим
   if (online === prev) return;
@@ -485,8 +486,9 @@ async function checkPlayersPurMurVanillaAndNotify(env) {
   const online = status.online || 0;
 
   // Сколько игроков было в прошлый раз (null -> 0)
-  const prevRaw = await env.PURMUR_STATE.get("purmur_vanilla");
+  const prevRaw = await env.PURMUR_STATE.get("purmur_vanilla"); 
   const prev = prevRaw === null ? 0 : Number(prevRaw);
+  console.log("purmur_vanilla prev: " + prev);
 
   // Ничего не изменилось — выходим
   if (online === prev) return;
