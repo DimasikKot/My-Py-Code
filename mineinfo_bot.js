@@ -410,7 +410,7 @@ async function handleUpdate(update, env) {
       const pretty = JSON.stringify(loading, null, 2); // отступ в 2 пробела
       let notified = ""
       try {
-        notified = await env.PURMUR_STATE.get("purmur_notified");
+        notified = await env.PURMUR_STATE.get("purmur_create");
       } catch (e) {
         notified = String(e);
       }
@@ -455,7 +455,7 @@ async function checkPlayersPurMurCreateAndNotify(env) {
   const online = status.online || 0;
 
   // Сколько игроков было в прошлый раз (null -> 0)
-  const prevRaw = await env.PURMUR_STATE.get("purmur_notified"); 
+  const prevRaw = await env.PURMUR_STATE.get("purmur_create");
   const prev = prevRaw === null ? 0 : Number(prevRaw);
 
   // Ничего не изменилось — выходим
@@ -469,7 +469,7 @@ async function checkPlayersPurMurCreateAndNotify(env) {
 
   // Запоминаем новое количество (в т.ч. 0, если все вышли).
   // TTL — чтобы флаг не залип навсегда, если cron остановится.
-  await env.PURMUR_STATE.put("purmur_notified", String(online), { expirationTtl: 10800 });
+  await env.PURMUR_STATE.put("purmur_create", String(online), { expirationTtl: 10800 });
 }
 
 async function checkPlayersPurMurVanillaAndNotify(env) {
@@ -483,7 +483,7 @@ async function checkPlayersPurMurVanillaAndNotify(env) {
   const online = status.online || 0;
 
   // Сколько игроков было в прошлый раз (null -> 0)
-  const prevRaw = await env.PURMUR_STATE.get("purmur_vanilla"); 
+  const prevRaw = await env.PURMUR_STATE.get("purmur_vanilla");
   const prev = prevRaw === null ? 0 : Number(prevRaw);
 
   // Ничего не изменилось — выходим
