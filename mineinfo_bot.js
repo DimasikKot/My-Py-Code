@@ -408,13 +408,16 @@ async function handleUpdate(update, env) {
 
     if (messageId) {
       const pretty = JSON.stringify(loading, null, 2); // отступ в 2 пробела
-      const notified = await env.STATE.get("purmur_notified");
-      await editMessage(
+      let notified = ""
+      try {
+        notified = await env.PURMUR_STATE.get("purmur_notified");
+      } catch (e) {
+        notified = String(e);
+      }
+      await sendMessage(
         chatId,
-        messageId,
         "```json\n" + pretty + "\n```" + "\n\n" + notified,
-        BOT_TOKEN,
-        "MarkdownV2"
+        BOT_TOKEN
       );
       await sleep(15000);
       await deleteMessage(chatId, messageId, BOT_TOKEN);
@@ -437,6 +440,11 @@ async function handleUpdate(update, env) {
 }
 
 async function checkPlayersAndNotify(env) {
+  checkPlayersPurMurCreateAndNotify(env);
+  checkPlayersPurMurVanillaAndNotify(env);
+}
+
+async function checkPlayersPurMurCreateAndNotify(env) {
   const status = await getMinecraftStatus("185.9.145.210", 32290);
 
   if (status.error) {
@@ -446,26 +454,50 @@ async function checkPlayersAndNotify(env) {
 
   const online = status.online || 0;
 
-  // Ключ в KV для защиты от повторных уведомлений
-  const notified = await env.STATE.get("purmur_notified");
+  // Сколько игроков было в прошлый раз (null -> 0)
+  const prevRaw = await env.PURMUR_STATE.get("purmur_notified"); 
+  const prev = prevRaw === null ? 0 : Number(prevRaw);
 
-  // Есть игроки и мы ещё не уведомляли — шлём сообщение
-  if (online > 0 && !notified) {
-    const text =
-      `🎮 **На сервере PurMur Create кто-то играет!**\n` +
-      `👥 Онлайн: ${online}/${status.max}\n` +
-      `📋 Игроки:\n${status.players_list}`;
+  // Ничего не изменилось — выходим
+  if (online === prev) return;
 
-    await sendMessage(-1003353431012, text, env.BOT_TOKEN, "Markdown");
+  // Если есть игроки — шлём уведомление
+  const text = online > 0
+    ? `🎮 **На сервере PurMur Create сейчас играют!**\n👥 Онлайн: ${online}/${status.max}\n📋 Игроки:\n${status.players_list}`
+    : `😴 **На сервере PurMur Create больше никого нет.**`;
+  await sendMessage(-1003353431012, text, env.BOT_TOKEN, "Markdown");
 
-    // Запоминаем, что уведомили. TTL — 3 часа, чтобы флаг не залип навсегда
-    await env.STATE.put("purmur_notified", "1", { expirationTtl: 10800 });
+  // Запоминаем новое количество (в т.ч. 0, если все вышли).
+  // TTL — чтобы флаг не залип навсегда, если cron остановится.
+  await env.PURMUR_STATE.put("purmur_notified", String(online), { expirationTtl: 10800 });
+}
+
+async function checkPlayersPurMurVanillaAndNotify(env) {
+  const status = await getMinecraftStatus("purmur.exaroton.me", 58386);
+
+  if (status.error) {
+    console.error("Cron: ошибка получения статуса:", status.error);
+    return;
   }
 
-  // Игроков нет — сбрасываем флаг, чтобы в следующий раз снова уведомить
-  if (online === 0) {
-    await env.STATE.delete("purmur_notified");
-  }
+  const online = status.online || 0;
+
+  // Сколько игроков было в прошлый раз (null -> 0)
+  const prevRaw = await env.PURMUR_STATE.get("purmur_vanilla"); 
+  const prev = prevRaw === null ? 0 : Number(prevRaw);
+
+  // Ничего не изменилось — выходим
+  if (online === prev) return;
+
+  // Если есть игроки — шлём уведомление
+  const text = online > 0
+    ? `🎮 **На сервере PurMur Vanilla сейчас играют!**\n👥 Онлайн: ${online}/${status.max}\n📋 Игроки:\n${status.players_list}`
+    : `😴 **На сервере PurMur Vanilla больше никого нет.**`;
+  await sendMessage(-1003353431012, text, env.BOT_TOKEN, "Markdown");
+
+  // Запоминаем новое количество (в т.ч. 0, если все вышли).
+  // TTL — чтобы флаг не залип навсегда, если cron остановится.
+  await env.PURMUR_STATE.put("purmur_vanilla", String(online), { expirationTtl: 10800 });
 }
 
 // ============================================================
@@ -493,7 +525,7 @@ export default {
   },
 
   async scheduled(event, env, ctx) {
-    // Cloudflare вызывает это каждые 10 минут согласно wrangler.toml
+    // Cloudflare вызывает это каждые 4 минуты согласно wrangler.toml
     ctx.waitUntil(checkPlayersAndNotify(env));
   },
 };
