@@ -302,19 +302,19 @@ async function handleUpdate(update, env) {
 
   if (!text) return;
 
-  if (["/purmur", "/vanilla"].includes(text)) {
+  if (text.startsWith("/purmur") || text.startsWith("/vanilla")) {
     await sendChatAction(chatId, "typing", BOT_TOKEN);
     await handlePurMurVanilla(chatId, BOT_TOKEN);
     return;
   }
 
-  if (["/create", "/info"].includes(text)) {
+  if (text.startsWith("/create") || text.startsWith("/info")) {
     await sendChatAction(chatId, "typing", BOT_TOKEN);
     await handlePurMurCreate(chatId, BOT_TOKEN);
     return;
   }
 
-  if (text === "/start") {
+  if (text.startsWith("/start")) {
     const reply =
       `Привет, ${userName}\n\n` +
       `Я бот для мониторинга Minecraft серверов\n\n` +
