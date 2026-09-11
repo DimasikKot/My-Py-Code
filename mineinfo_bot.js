@@ -421,8 +421,6 @@ async function handleUpdate(update, env) {
         BOT_TOKEN,
         "MarkdownV2",
       );
-      await sleep(15000);
-      await deleteMessage(chatId, messageId, BOT_TOKEN);
     }
     return;
   }
@@ -442,8 +440,17 @@ async function handleUpdate(update, env) {
 }
 
 async function checkPlayersAndNotify(env) {
-  checkPlayersPurMurCreateAndNotify(env);
-  checkPlayersPurMurVanillaAndNotify(env);
+  try {
+    checkPlayersPurMurCreateAndNotify(env);
+  } catch (e) {
+    await sendMessage(872461734, "```json\n" + "error: " + String(e) + "\n```" + "\n\n", env.BOT_TOKEN, "MarkdownV2");
+  }
+
+  try {
+    checkPlayersPurMurVanillaAndNotify(env);
+  } catch (e) {
+    await sendMessage(872461734, "```json\n" + "error: " + String(e) + "\n```" + "\n\n", env.BOT_TOKEN, "MarkdownV2");
+  }
 }
 
 async function checkPlayersPurMurCreateAndNotify(env) {
@@ -457,9 +464,10 @@ async function checkPlayersPurMurCreateAndNotify(env) {
   const online = status.online || 0;
 
   // Сколько игроков было в прошлый раз (null -> 0)
-  const prevRaw = await env.PURMUR_STATE.get("purmur_create"); 
+  const prevRaw = await env.PURMUR_STATE.get("purmur_create");
   const prev = prevRaw === null ? 0 : Number(prevRaw);
   console.log("purmur_create prev: " + prev);
+  await sendMessage(872461734, "```json\n" + "purmur_create prev: " + prev + "\n```" + "\n\n", env.BOT_TOKEN, "MarkdownV2");
 
   // Ничего не изменилось — выходим
   if (online === prev) return;
@@ -486,9 +494,10 @@ async function checkPlayersPurMurVanillaAndNotify(env) {
   const online = status.online || 0;
 
   // Сколько игроков было в прошлый раз (null -> 0)
-  const prevRaw = await env.PURMUR_STATE.get("purmur_vanilla"); 
+  const prevRaw = await env.PURMUR_STATE.get("purmur_vanilla");
   const prev = prevRaw === null ? 0 : Number(prevRaw);
   console.log("purmur_vanilla prev: " + prev);
+  await sendMessage(872461734, "```json\n" + "purmur_vanilla prev: " + prev + "\n```" + "\n\n", env.BOT_TOKEN, "MarkdownV2");
 
   // Ничего не изменилось — выходим
   if (online === prev) return;
